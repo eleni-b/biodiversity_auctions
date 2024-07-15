@@ -722,9 +722,6 @@ def run_experiments(random_seed):
             auction_items = [Land(identifier=(i + 1, j + 1), cost=np.random.randint(1, Auction.costs_max)) for i in range(rows) for j in range(cols)]
             auction = Auction(valuation_type[func_type], auction_items, int(budget), delta)
 
-            print(auction.values)
-            print(auction.costs)
-
             vcg_welf, vcg_pay = 0, 0
             vcg_runtime = datetime.now()
             vcg_welf, vcg_pay = VCGMechanism().get_assignments_and_prices('VCG', auction)
