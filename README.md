@@ -11,7 +11,8 @@ The corresponding publication can be found in [here](https://aisel.aisnet.org/cg
 ## Suggested Citation: 
 Using the code of this repository, must be accompanied by the following citation:
 
-> @inproceedings{Batziou2023,
+```
+@inproceedings{Batziou2023,
 	author = {Batziou, Eleni and  Bichler, Martin},
 	title = {Budget-Feasible Market Design for Biodiversity Conservation: Considering Incentives and Spatial Coordination},
 	booktitle = {Wirtschaftsinformatik (WI)},
@@ -19,6 +20,7 @@ Using the code of this repository, must be accompanied by the following citation
 	month = {Sep},
 	url = {https://aisel.aisnet.org/wi2023/44}
 }
+```
 
 
 ## Usage
@@ -26,4 +28,6 @@ Using the code of this repository, must be accompanied by the following citation
 Valuations for land parcels and farmer costs used in the auction are generated on the fly based on the valuation function of choice. For this, the user is required to insert a random seed. The experimental code, implementing and evaluating the auction algorithms on different value function models is contained entirely within run_all.py. To invoke the script, insert a random seed and simply run:
 
 
-`python run_all.py <random seed>`
+```bash
+$ python3 run_all.py <random seed>
+```
