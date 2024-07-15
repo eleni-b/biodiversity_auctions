@@ -178,6 +178,28 @@ class SubmodularMonotoneValuation(ValuationFunction):
             # Set the value for the subset
             values[subset] = max(min_val, max_val - np.random.randint(0, max(1, min(int(max_val * 0.25), int((max_val - min_val) * 0.35)))))
 
+class AdjacenctValueModel(ValuationFunction):
+
+    def generate_valuations(self, auction, delta):
+        values = super().generate_valuations(self, auction, delta)
+        for itemgroup in auction.itemgroups_to_value:
+            if itemgroup not in auction.items:
+                marginal_value = 0
+                max_single_val = 0
+                for single in itemgroup:
+                    row, col = single[0], single[1]
+                    if (values[single] > max_single_val):
+                        max_single_val = values[single]
+                    for adjacent in [(row-1, col), (row+1, col), (row, col-1), (row, col+1)]:
+                        if adjacent in itemgroup:
+                            marginal_value += values[single]
+                            break
+                if (values[itemgroup] - marginal_value*delta) < max_single_val:
+                    values[itemgroup] = max_single_val + random.uniform(0,1)
+                else:
+                    values[itemgroup] -= marginal_value*delta
+        return values
+
 class Auction:
     """
     A class to represent an auction.
@@ -197,7 +219,7 @@ class Auction:
     costs_max = 50
     value_max = 100
 
-    def __init__(self, valuation_function, items, budget, multiplier):
+    def __init__(self, valuation_function, items, budget, multiplier, delta):
         """
         Initialize the Auction with a valuation function, items, budget, and multiplier.
         
@@ -216,8 +238,29 @@ class Auction:
         self.corridor_value = {}
         self.budget = budget
         self.multiplier = multiplier
+        self.delta = delta
 
+        ## Corridor computation here
         self._calculate_corridor_values()
+
+        ## Adjacency computation - naive version
+        # for itemgroup in self.itemgroups_to_value:
+        #     if itemgroup not in self.items:
+        #         marginal_value = 0
+        #         max_single_val = 0
+        #         for single in itemgroup:
+        #             row, col = single[0], single[1]
+        #             if (self.values[single] > max_single_val):
+        #                 max_single_val = self.values[single]
+        #             for adjacent in [(row-1, col), (row+1, col), (row, col-1), (row, col+1)]:
+        #                 if adjacent in itemgroup:
+        #                     marginal_value += self.values[single]
+        #                     # marginal_value -= random.uniform(0,2)
+        #                     break
+        #         if (self.values[itemgroup] - marginal_value*self.multi) < max_single_val:
+        #             self.values[itemgroup] = max_single_val + random.uniform(0,1)
+        #         else:
+        #             self.values[itemgroup] -= marginal_value*self.multi
 
     def _calculate_corridor_values(self):
         """
@@ -634,53 +677,68 @@ class ClockBudgetMonotoneMechanism(Mechanism):
 
 def run_experiments():
     testsets_per_val_type = 10
-    val_types = [
-        # ('additive', AdditiveValuation), 
-        ('superadditive', SuperadditiveValuation), 
-        # ('submodular_monotone', SubmodularMonotoneValuation),
-        # ('submodular_nonmonotone', SubmodularNonmonotoneValuation)
-    ]
-
-    budget_list = random.sample(range(70, 80), 10)
     np.random.seed(11)
-    results = pd.DataFrame(columns=['binding', 'budget', 'clock_mono_obj', 'clock_mono_payment', 'size', 'valuation_fn', 'multiplier', 'clock_mono_runtime'])
-
+    
+    results = pd.DataFrame(columns=['budget', 'value', 'multiplier', 'opt', 'bfa', 'vcg', 'opt_pay', 'bfa_pay', 'vcg_pay', 'bfa_opt', 'vcg_opt', 'bfa_opt_pay', 'vcg_opt_pay'])
+    avg_results = pd.DataFrame(columns=['budget', 'value', 'multiplier', 'bfa_opt', 'vcg_opt'])
+    std_results = pd.DataFrame(columns=['budget', 'value', 'multiplier', 'bfa_opt', 'vcg_opt'])
+    
     # Grid size
     rows, cols = 3, 3
 
+    # Instance configuration Parameters
+    func_types = ['additive', 'superadditive', 'submodular', 'corridors', 'adjacent']
+    budget_vals = ['70', '75', '80', '145', '150', '155', '220', '225', '230', '1000', '1050']
+    configs = [(f, b) for f in func_types for b in budget_vals]
+
+
     # Superadditivity multiplier range
-    superadditive_multiplier = [1.1, 1.2, 1.3, 1.4, 1.5, 1.7, 2.0]
-    multiplier = superadditive_multiplier[6]
+    superadd_delta = [1.1, 1.2, 1.3, 1.4, 1.5, 1.7, 2.0] # Later versions include only [1.1, 1.5, 2.0]
+    delta = superadd_delta[6]
 
-    for vtype, vtype_fn in val_types:
-        valuation_function = vtype_fn()
+    # Adjacency multiplier range
+    adjacent_delta = [0.1, 0.2, 0.5]
+
+    
+
+    for conf in configs:
+        func_type, budget = conf[0:2]
         for ti in range(testsets_per_val_type):
-            auction_items = [Land((i + 1, j + 1), np.random.randint(1, 50)) for i in range(rows) for j in range(cols)]
-            auction = Auction(valuation_function, auction_items, budget_list[ti], multiplier)
-            print(f'Testset {ti} for val {vtype} of rows={rows} cols={cols}')
-            print(f'budget {auction.budget} - multiplier {auction.multiplier}')
+            auction_items = [Land((i + 1, j + 1), np.random.randint(1, Auction.costs_max)) for i in range(rows) for j in range(cols)]
+            auction = Auction(valuation_function, auction_items, int(budget), delta)
 
+            vcg_welf, vcg_pay = 0, 0
             vcg_runtime = datetime.now()
-            vcg_obj_val, vcg_payment = VCGMechanism().get_assignments_and_prices('VCG', auction)
+            vcg_welf, vcg_pay = VCGMechanism().get_assignments_and_prices('VCG', auction)
             vcg_runtime = datetime.now() - vcg_runtime
 
+            opt_welf, opt_pay = 0, 0
             opt_runtime = datetime.now()
-            budg_obj_val, budg_payment = OptimalBudgetMechanism().get_assignments_and_prices('optimal budget', auction)
+            opt_welf, opt_pay = OptimalBudgetMechanism().get_assignments_and_prices('optimal budget', auction)
             opt_runtime = datetime.now() - opt_runtime
 
-            clock_runtime = datetime.now()
-            clock_mono_obj_val, clock_mono_payment = ClockBudgetMonotoneMechanism().get_assignments_and_prices('clock monotone', auction)
-            clock_mono_runtime = datetime.now() - clock_runtime
+            bfa_welf, bfa_pay = 0, 0
+            bfa_runtime = datetime.now()
+            bfa_welf, bfa_pay = ClockBudgetMonotoneMechanism().get_assignments_and_prices('clock monotone', auction)
+            bfa_runtime = datetime.now() - bfa_runtime
 
-            results.loc[len(results)] = [
-                'yes', auction.budget, clock_mono_obj_val, clock_mono_payment,
-                (rows, cols), vtype, multiplier, clock_mono_runtime
-            ]
+            results.loc[len(results)] = [auction.budget, func_type, delta, opt_welf, vcg_welf, bfa_welf, opt_pay, vcg_pay, bfa_pay, vcg_welf/opt_welf, bfa_welf/opt_welf, vcg_pay/ int(budget), bfa_pay/ int(budget)] 
 
-    results = results.sort_values(by=['budget']).reset_index(drop=True)
-    corridor_file = f'corridor_results_superadd-{multiplier}.csv'
-    results.to_csv(corridor_file)
-    print(f'Results saved to {corridor_file}')
+
+    results = results.reset_index(drop=True)
+    file = 'journal_data/' + str(func_type)+'_'+str(delta)+'.csv'
+    results.to_csv(file)  
+    
+    
+    avg_results = results.groupby(['budget', 'value', 'delta'])[['bfa_opt', 'vcg_opt', 'bfa_opt_pay','vcg_opt_pay']].mean()
+    avg_file = 'journal_data/avg_' + str(func_type)+'_'+str(delta)+'.csv'
+    avg_results.to_csv(avg_file)  
+    
+    std_results = results.groupby(['budget', 'value', 'delta'])[['bfa_opt', 'vcg_opt', 'bfa_opt_pay','vcg_opt_pay']].std()
+    std_file = 'journal_data/std_' + str(func_type)+'_'+str(delta)+'.csv'
+    std_results.to_csv(std_file)  
+    
+    avg_results, std_results
 
 if __name__ == "__main__":
     run_experiments()
