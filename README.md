@@ -8,6 +8,19 @@ The corresponding publication can be found in [here](https://aisel.aisnet.org/cg
 
 **Authors:** Eleni Batziou, Martin Bichler
 
+## Suggested Citation: 
+Using the code of this repository, must be accompanied by the following citation:
+
+@inproceedings{Batziou2023,
+	editor = {},
+	author = {Batziou, Eleni and  Bichler, Martin},
+	title = {Budget-Feasible Market Design for Biodiversity Conservation: Considering Incentives and Spatial Coordination},
+	booktitle = {Wirtschaftsinformatik (WI)},
+	year = {2023},
+	month = {Sep},
+	url = {https://aisel.aisnet.org/wi2023/44}
+}
+
 
 ## Usage
 
