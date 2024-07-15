@@ -630,9 +630,6 @@ class ClockBudgetMonotoneMechanism(Mechanism):
         return get_value_fn(auction.values, w) - sum(auction.costs[i] for i in w), sum(prices[i] for i in w)
     
 
-
-
-
 ## Experimental part
 
 def run_experiments():
