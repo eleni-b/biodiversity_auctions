@@ -11,7 +11,7 @@ The corresponding publication can be found in: https://aisel.aisnet.org/cgi/view
 
 ## Usage
 
-The experimental code, generating valuations for land items, costs as well as implementing and evaluating the auction algorithm on different value function models is contained entirely within run_all.py. To invoke the script, select a random seed on choice and simply run:
+Valuations for land parcels and farmer costs used in the auction are generated on the fly based on the valuation function of choice. For this, the user is required to insert a random seed. The experimental code, implementing and evaluating the auction algorithms on different value function models is contained entirely within run_all.py. To invoke the script, insert a random seed and simply run:
 
 
 `python run_all.py <random seed>`
