@@ -1,11 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# ## Data Preparation
-
-# In[20]:
-
-
 import itertools
 import numpy as np
 import pandas as pd
