@@ -4,7 +4,7 @@ This repository contains code and data evaluating the performance of various mec
 
 
 
-The corresponding publication can be found in: https://aisel.aisnet.org/cgi/viewcontent.cgi?article=1043&context=wi2023
+The corresponding publication can be found in [here](https://aisel.aisnet.org/cgi/viewcontent.cgi?article=1043&context=wi2023).
 
 **Authors:** Eleni Batziou, Martin Bichler
 
