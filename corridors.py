@@ -635,7 +635,6 @@ class ClockBudgetMonotoneMechanism(Mechanism):
 
 ## Experimental part
 
-# Define main function
 def run_experiments():
     testsets_per_val_type = 10
     val_types = [
